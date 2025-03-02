@@ -1,0 +1,59 @@
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
+
+class TicketBookingSystem {
+    private int availableSeats;
+    private final Lock lock = new ReentrantLock();
+
+    public TicketBookingSystem(int seats) {
+        this.availableSeats = seats;
+    }
+
+    public void bookTicket(String customerType, int seatsToBook) {
+        lock.lock();
+        try {
+            if (seatsToBook <= availableSeats) {
+                System.out.println(customerType + " booked " + seatsToBook + " seat(s). Remaining seats: " + (availableSeats - seatsToBook));
+                availableSeats -= seatsToBook;
+            } else {
+                System.out.println(customerType + " booking failed. Not enough seats available.");
+            }
+        } finally {
+            lock.unlock();
+        }
+    }
+}
+
+class BookingThread extends Thread {
+    private TicketBookingSystem system;
+    private String customerType;
+    private int seatsToBook;
+
+    public BookingThread(TicketBookingSystem system, String customerType, int seatsToBook, int priority) {
+        this.system = system;
+        this.customerType = customerType;
+        this.seatsToBook = seatsToBook;
+        setPriority(priority);
+    }
+
+    @Override
+    public void run() {
+        system.bookTicket(customerType, seatsToBook);
+    }
+}
+
+public class TicketBookingApp {
+    public static void main(String[] args) {
+        TicketBookingSystem system = new TicketBookingSystem(10);
+        
+        BookingThread vip1 = new BookingThread(system, "VIP Customer 1", 2, Thread.MAX_PRIORITY);
+        BookingThread vip2 = new BookingThread(system, "VIP Customer 2", 3, Thread.MAX_PRIORITY);
+        BookingThread regular1 = new BookingThread(system, "Regular Customer 1", 4, Thread.NORM_PRIORITY);
+        BookingThread regular2 = new BookingThread(system, "Regular Customer 2", 2, Thread.NORM_PRIORITY);
+        
+        vip1.start();
+        vip2.start();
+        regular1.start();
+        regular2.start();
+    }
+}
